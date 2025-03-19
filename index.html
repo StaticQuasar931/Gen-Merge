@@ -21,6 +21,10 @@
             justify-content: center;
             gap: 10px;
             margin-top: 20px;
+            padding: 10px;
+            border: 2px solid white;
+            background-color: #333;
+            border-radius: 10px;
         }
         .gem {
             width: 60px;
@@ -30,9 +34,10 @@
             background-color: lightblue;
             border-radius: 10px;
             text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
+            cursor: grab;
+            transition: transform 0.2s, background-color 0.3s;
             user-select: none;
+            box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.2);
         }
         .gem:hover {
             transform: scale(1.1);
@@ -45,6 +50,26 @@
             font-size: 16px;
             cursor: pointer;
             margin: 5px;
+            background-color: cyan;
+            border: none;
+            border-radius: 5px;
+            color: black;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: lightgreen;
+        }
+        #settings-menu {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #444;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 10;
         }
         #qr-container {
             margin-top: 20px;
@@ -64,16 +89,21 @@
     </style>
 </head>
 <body>
-
     <h1>Gem Merge</h1>
-    <p>Merge gems to create larger, more valuable ones!</p>
+    <p>Drag and merge identical gems to create powerful ones!</p>
 
     <div id="game-container"></div>
-
+    
     <div class="controls">
         <button onclick="generateGem()">Generate Gem</button>
+        <button onclick="toggleSettings()">Settings</button>
+    </div>
+
+    <div id="settings-menu">
+        <h3>Settings</h3>
         <button onclick="exportSave()">Export Save</button>
         <button onclick="importSave()">Import Save</button>
+        <button onclick="toggleSettings()">Close</button>
     </div>
 
     <div id="qr-container">
@@ -82,11 +112,11 @@
             <img id="qr-code" src="https://res.cloudinary.com/dcsrqennd/image/upload/v1733694622/frame_1_vmv9y3.png" alt="QR Code to Static's Website">
         </a>
     </div>
-
+    
     <div id="credits">
         <p>Made by <a href="https://sites.google.com/view/staticquasar931/home">Static</a></p>
     </div>
-
+    
     <script>
         let gems = [];
         let points = 0;
@@ -105,18 +135,26 @@
                 div.className = "gem";
                 div.textContent = gem.level;
                 div.style.backgroundColor = getColor(gem.level);
-                div.onclick = () => mergeGems(index);
+                div.draggable = true;
+                div.ondragstart = (e) => dragStart(e, index);
+                div.ondrop = (e) => dropMerge(e, index);
+                div.ondragover = (e) => e.preventDefault();
                 container.appendChild(div);
             });
         }
 
-        function mergeGems(index) {
-            if (index < gems.length - 1 && gems[index].level === gems[index + 1].level) {
-                gems[index].level++;
-                gems.splice(index + 1, 1);
-                points += gems[index].level * 10;
+        function dragStart(event, index) {
+            event.dataTransfer.setData("text/plain", index);
+        }
+
+        function dropMerge(event, targetIndex) {
+            let sourceIndex = event.dataTransfer.getData("text/plain");
+            if (sourceIndex !== "" && sourceIndex != targetIndex && gems[sourceIndex].level === gems[targetIndex].level) {
+                gems[targetIndex].level++;
+                gems.splice(sourceIndex, 1);
+                points += gems[targetIndex].level * 10;
+                updateGame();
             }
-            updateGame();
         }
 
         function getColor(level) {
@@ -124,8 +162,13 @@
             return colors[Math.min(level - 1, colors.length - 1)];
         }
 
+        function toggleSettings() {
+            let menu = document.getElementById("settings-menu");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+
         function exportSave() {
-            const saveData = JSON.stringify({ gems, points });
+            const saveData = btoa(JSON.stringify({ gems, points }));
             navigator.clipboard.writeText(saveData);
             alert("Save copied! Paste it when importing.");
         }
@@ -134,7 +177,7 @@
             let input = prompt("Paste your saved game data:");
             if (input) {
                 try {
-                    let data = JSON.parse(input);
+                    let data = JSON.parse(atob(input));
                     gems = data.gems || [];
                     points = data.points || 0;
                     updateGame();
@@ -151,6 +194,5 @@
 
         updateGame();
     </script>
-
 </body>
 </html>
