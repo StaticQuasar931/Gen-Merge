@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gem Merge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #222;
+            color: white;
+            margin: 0;
+        }
+        h1 {
+            margin-top: 10px;
+        }
+        #game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .gem {
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+            font-size: 20px;
+            background-color: lightblue;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .gem:hover {
+            transform: scale(1.1);
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #qr-container {
+            margin-top: 20px;
+        }
+        #qr-code {
+            width: 120px;
+        }
+        #credits {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        #credits a {
+            color: cyan;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Gem Merge</h1>
+    <p>Merge gems to create larger, more valuable ones!</p>
+
+    <div id="game-container"></div>
+
+    <div class="controls">
+        <button onclick="generateGem()">Generate Gem</button>
+        <button onclick="exportSave()">Export Save</button>
+        <button onclick="importSave()">Import Save</button>
+    </div>
+
+    <div id="qr-container">
+        <p>Scan the QR code to visit my site:</p>
+        <a href="https://sites.google.com/view/staticquasar931/home">
+            <img id="qr-code" src="https://res.cloudinary.com/dcsrqennd/image/upload/v1733694622/frame_1_vmv9y3.png" alt="QR Code to Static's Website">
+        </a>
+    </div>
+
+    <div id="credits">
+        <p>Made by <a href="https://sites.google.com/view/staticquasar931/home">Static</a></p>
+    </div>
+
+    <script>
+        let gems = [];
+        let points = 0;
+
+        function generateGem() {
+            let newGem = { level: 1 };
+            gems.push(newGem);
+            updateGame();
+        }
+
+        function updateGame() {
+            const container = document.getElementById('game-container');
+            container.innerHTML = "";
+            gems.forEach((gem, index) => {
+                let div = document.createElement('div');
+                div.className = "gem";
+                div.textContent = gem.level;
+                div.style.backgroundColor = getColor(gem.level);
+                div.onclick = () => mergeGems(index);
+                container.appendChild(div);
+            });
+        }
+
+        function mergeGems(index) {
+            if (index < gems.length - 1 && gems[index].level === gems[index + 1].level) {
+                gems[index].level++;
+                gems.splice(index + 1, 1);
+                points += gems[index].level * 10;
+            }
+            updateGame();
+        }
+
+        function getColor(level) {
+            const colors = ["lightblue", "cyan", "limegreen", "orange", "red", "purple", "gold"];
+            return colors[Math.min(level - 1, colors.length - 1)];
+        }
+
+        function exportSave() {
+            const saveData = JSON.stringify({ gems, points });
+            navigator.clipboard.writeText(saveData);
+            alert("Save copied! Paste it when importing.");
+        }
+
+        function importSave() {
+            let input = prompt("Paste your saved game data:");
+            if (input) {
+                try {
+                    let data = JSON.parse(input);
+                    gems = data.gems || [];
+                    points = data.points || 0;
+                    updateGame();
+                } catch {
+                    alert("Invalid save data!");
+                }
+            }
+        }
+
+        setInterval(() => {
+            points += gems.reduce((sum, gem) => sum + gem.level, 0);
+            document.title = `💎 ${points} Points - Gem Merge`;
+        }, 1000);
+
+        updateGame();
+    </script>
+
+</body>
+</html>
